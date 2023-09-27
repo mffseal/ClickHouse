@@ -686,7 +686,6 @@ std::optional<MergeJoinAlgorithm::Status> MergeJoinAlgorithm::handleAsofJoinStat
         return {};
 
     auto & left_cursor = *cursors[0];
-    size_t lpos = left_cursor->getRow();
     const auto & left_columns = left_cursor.getCurrent().getColumns();
 
     MutableColumns result_cols = getEmptyResultColumns();
@@ -695,7 +694,7 @@ std::optional<MergeJoinAlgorithm::Status> MergeJoinAlgorithm::handleAsofJoinStat
     {
         size_t i = 0;
         for (const auto & col : left_columns)
-            result_cols[i++]->insertFrom(*col, lpos);
+            result_cols[i++]->insertFrom(*col, left_cursor->getRow());
         for (const auto & col : asof_join_state.value.getColumns())
             result_cols[i++]->insertFrom(*col, asof_join_state.value_row);
         chassert(i == result_cols.size());
@@ -704,10 +703,11 @@ std::optional<MergeJoinAlgorithm::Status> MergeJoinAlgorithm::handleAsofJoinStat
 
     while (isLeft(kind) && left_cursor->isValid())
     {
+        // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: {}", __FILE__, __LINE__, left_cursor->dump());
         /// return row with default values at right side
         size_t i = 0;
         for (const auto & col : left_columns)
-            result_cols[i++]->insertFrom(*col, lpos);
+            result_cols[i++]->insertFrom(*col, left_cursor->getRow());
         for (; i < result_cols.size(); ++i)
             result_cols[i]->insertDefault();
         chassert(i == result_cols.size());
@@ -977,12 +977,12 @@ MergeJoinAlgorithm::Status MergeJoinAlgorithm::asofJoin()
         auto lpos = left_cursor->getRow();
         auto rpos = right_cursor->getRow();
         auto cmp = compareCursors(*left_cursor, *right_cursor);
-        // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{} ({}) <=> ({}) -> {}", __FILE__, __LINE__, left_cursor.dump(), right_cursor.dump(), cmp);
+        // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ({}) <=> ({}) -> {}", __FILE__, __LINE__, left_cursor.dump(), right_cursor.dump(), cmp);
 
         if (cmp == 0)
         {
             auto asof_cmp = compareAsofCursors(left_cursor, right_cursor);
-            // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{} ({}) <=> ({}) -> asof {}", __FILE__, __LINE__, left_cursor.dump(), right_cursor.dump(), asof_cmp);
+            // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ({}) <=> ({}) -> asof {}", __FILE__, __LINE__, left_cursor.dump(), right_cursor.dump(), asof_cmp);
 
             if ((asof_inequality == ASOFJoinInequality::Less && asof_cmp <= -1)
              || (asof_inequality == ASOFJoinInequality::LessOrEquals && asof_cmp <= 0))
@@ -1002,6 +1002,7 @@ MergeJoinAlgorithm::Status MergeJoinAlgorithm::asofJoin()
 
             if (asof_inequality == ASOFJoinInequality::Less || asof_inequality == ASOFJoinInequality::LessOrEquals)
             {
+                // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
                 /// Asof condition is not (yet) satisfied, skip row in right table
                 right_cursor->next();
                 continue;
@@ -1010,7 +1011,7 @@ MergeJoinAlgorithm::Status MergeJoinAlgorithm::asofJoin()
             if ((asof_inequality == ASOFJoinInequality::Greater && asof_cmp >= 1)
              || (asof_inequality == ASOFJoinInequality::GreaterOrEquals && asof_cmp >= 0))
             {
-                // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{} ", __FILE__, __LINE__);
+                // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
                 /// condition is satisfied, remember this row and move next to try to find better match
                 asof_join_state.set(right_cursor, rpos);
                 right_cursor->next();
@@ -1022,7 +1023,7 @@ MergeJoinAlgorithm::Status MergeJoinAlgorithm::asofJoin()
                 /// Asof condition is not satisfied anymore, use last matched row from right table
                 if (asof_join_state.hasMatch(left_cursor, asof_inequality))
                 {
-                    // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{} ", __FILE__, __LINE__);
+                    // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
                     size_t i = 0;
                     for (const auto & col : left_columns)
                         result_cols[i++]->insertFrom(*col, lpos);
@@ -1035,7 +1036,7 @@ MergeJoinAlgorithm::Status MergeJoinAlgorithm::asofJoin()
                     asof_join_state.reset();
                     if (isLeft(kind))
                     {
-                        // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{} ", __FILE__, __LINE__);
+                        // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
 
                         /// return row with default values at right side
                         size_t i = 0;
@@ -1047,7 +1048,7 @@ MergeJoinAlgorithm::Status MergeJoinAlgorithm::asofJoin()
                     }
                 }
                 left_cursor->next();
-                // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{} ", __FILE__, __LINE__);
+                // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
                 continue;
             }
 
@@ -1055,10 +1056,10 @@ MergeJoinAlgorithm::Status MergeJoinAlgorithm::asofJoin()
         }
         else if (cmp < 0)
         {
-            // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{} ", __FILE__, __LINE__);
+            // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
             if (asof_join_state.hasMatch(left_cursor, asof_inequality))
             {
-                // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{} ", __FILE__, __LINE__);
+                // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
 
                 size_t i = 0;
                 for (const auto & col : left_columns)
@@ -1071,15 +1072,18 @@ MergeJoinAlgorithm::Status MergeJoinAlgorithm::asofJoin()
             }
             else
             {
-                // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{} ", __FILE__, __LINE__);
+                // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
                 asof_join_state.reset();
             }
-            // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{} ", __FILE__, __LINE__);
+            // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: {}", __FILE__, __LINE__, cursors[0]->dump());
 
             /// no matches for rows in left table, just pass them through
             size_t num = nextDistinct(*left_cursor);
+            // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: {}", __FILE__, __LINE__, num);
+
             if (isLeft(kind) && num)
             {
+                // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
                 /// return them with default values at right side
                 size_t i = 0;
                 for (const auto & col : left_columns)
@@ -1091,12 +1095,13 @@ MergeJoinAlgorithm::Status MergeJoinAlgorithm::asofJoin()
         }
         else
         {
-            // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{} ", __FILE__, __LINE__);
+            // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
 
             /// skip rows in right table until we find match for current row in left table
             nextDistinct(*right_cursor);
         }
     }
+    // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
     size_t num_rows = result_cols.empty() ? 0 : result_cols.front()->size();
     return Status(Chunk(std::move(result_cols), num_rows));
 }
@@ -1106,6 +1111,8 @@ MergeJoinAlgorithm::Status MergeJoinAlgorithm::asofJoin()
 /// otherwise - vice versa
 Chunk MergeJoinAlgorithm::createBlockWithDefaults(size_t source_num, size_t start, size_t num_rows) const
 {
+    // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: {} - {} - {} = {}", __FILE__, __LINE__, source_num, start, num_rows, cursors[source_num]->dump());
+
     ColumnRawPtrs cols;
     {
         const auto & columns_left = source_num == 0 ? cursors[0]->getCurrent().getColumns() : cursors[0]->sampleColumns();
@@ -1128,7 +1135,8 @@ Chunk MergeJoinAlgorithm::createBlockWithDefaults(size_t source_num, size_t star
             cols.push_back(col.get());
         }
     }
-
+    // for (const auto & col : cols)
+        // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: {}/{}", __FILE__, __LINE__, col->size(), num_rows);
     Chunk result_chunk;
     copyColumnsResized(cols, start, num_rows, result_chunk);
     return result_chunk;
@@ -1144,6 +1152,8 @@ Chunk MergeJoinAlgorithm::createBlockWithDefaults(size_t source_num)
 
 IMergingAlgorithm::Status MergeJoinAlgorithm::merge()
 {
+    // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: {} <=> {}", __FILE__, __LINE__, cursors[0]->dump(), cursors[1]->dump());
+
     if (!cursors[0]->cursor.isValid() && !cursors[0]->fullyCompleted())
         return Status(0);
 
@@ -1158,12 +1168,15 @@ IMergingAlgorithm::Status MergeJoinAlgorithm::merge()
 
     if (cursors[0]->fullyCompleted() || cursors[1]->fullyCompleted())
     {
+        // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
+
         if (!cursors[0]->fullyCompleted() && isLeftOrFull(kind))
             return Status(createBlockWithDefaults(0));
 
         if (!cursors[1]->fullyCompleted() && isRightOrFull(kind))
             return Status(createBlockWithDefaults(1));
 
+        // LOG_DEBUG(&Poco::Logger::get("XXXX"), "{}:{}: ", __FILE__, __LINE__);
         return Status({}, true);
     }
 
