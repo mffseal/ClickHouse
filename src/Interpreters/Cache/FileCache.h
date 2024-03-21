@@ -24,8 +24,7 @@
 namespace DB
 {
 
-/// Track acquired space in cache during reservation
-/// to make error messages when no space left more informative.
+/// Track acquired space in cache during reservation to make error messages when no space left more informative.
 struct FileCacheReserveStat
 {
     struct Stat
