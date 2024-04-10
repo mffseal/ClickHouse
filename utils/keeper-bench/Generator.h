@@ -195,5 +195,3 @@ private:
     RequestGetter request_getter;
     Coordination::ACLs default_acls;
 };
-
-std::optional<Generator> getGenerator(const std::string & name);

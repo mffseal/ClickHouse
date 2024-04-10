@@ -34,12 +34,13 @@ int main(int argc, char *argv[])
         boost::program_options::options_description desc = createOptionsDescription("Allowed options", getTerminalWidth());
         desc.add_options()
             ("help",                                                                         "produce help message")
-            ("config",         value<std::string>()->default_value(""),                      "yaml/xml file containing configuration")
-            ("concurrency,c",  value<unsigned>(),                                            "number of parallel queries")
-            ("report-delay,d", value<double>(),                                              "delay between intermediate reports in seconds (set 0 to disable reports)")
-            ("iterations,i",   value<size_t>(),                                              "amount of queries to be executed")
-            ("time-limit,t",   value<double>(),                                              "stop launch of queries after specified time limit")
-            ("hosts,h",        value<Strings>()->multitoken()->default_value(Strings{}, ""), "")
+            ("config",            value<std::string>()->default_value(""),                      "yaml/xml file containing configuration")
+            ("input-request-log", value<std::string>()->default_value(""),                      "log of requests that will be replayed")
+            ("concurrency,c",     value<unsigned>(),                                            "number of parallel queries")
+            ("report-delay,d",    value<double>(),                                              "delay between intermediate reports in seconds (set 0 to disable reports)")
+            ("iterations,i",      value<size_t>(),                                              "amount of queries to be executed")
+            ("time-limit,t",      value<double>(),                                              "stop launch of queries after specified time limit")
+            ("hosts,h",           value<Strings>()->multitoken()->default_value(Strings{}, ""), "")
             ("continue_on_errors", "continue testing even if a query fails")
         ;
 
@@ -56,6 +57,7 @@ int main(int argc, char *argv[])
 
         Runner runner(valueToOptional<unsigned>(options["concurrency"]),
                       options["config"].as<std::string>(),
+                      options["input-request-log"].as<std::string>(),
                       options["hosts"].as<Strings>(),
                       valueToOptional<double>(options["time-limit"]),
                       valueToOptional<double>(options["report-delay"]),
@@ -66,9 +68,9 @@ int main(int argc, char *argv[])
         {
             runner.runBenchmark();
         }
-        catch (const DB::Exception & e)
+        catch (...)
         {
-            std::cout << "Got exception while trying to run benchmark: " << e.message() << std::endl;
+            std::cout << "Got exception while trying to run benchmark: " << DB::getCurrentExceptionMessage(true) << std::endl;
         }
 
         return 0;
