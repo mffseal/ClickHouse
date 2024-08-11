@@ -14,3 +14,8 @@ Diagnostics:
             readability-identifier-naming,
             bugprone-reserved-identifier,
         ]
+
+CompileFlags:
+    Add: 
+        - "-ferror-limit=0"  # 移除错误数量限制
+        - "-Wno-switch-default"

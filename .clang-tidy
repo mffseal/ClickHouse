@@ -26,7 +26,7 @@ Checks: '*,
     -bugprone-implicit-widening-of-multiplication-result,
     -bugprone-narrowing-conversions,
     -bugprone-not-null-terminated-result,
-    -bugprone-reserved-identifier, # useful but too slow, TODO retry when https://reviews.llvm.org/rG1c282052624f9d0bd273bde0b47b30c96699c6c7 is merged
+    -bugprone-reserved-identifier,
     -bugprone-unchecked-optional-access,
 
     -cert-dcl16-c,
@@ -40,7 +40,7 @@ Checks: '*,
 
     -clang-analyzer-unix.Malloc,
 
-    -cppcoreguidelines-*, # impractical in a codebase as large as ClickHouse, also slow
+    -cppcoreguidelines-*,
 
     -darwin-*,
 
@@ -81,10 +81,10 @@ Checks: '*,
     -openmp-*,
 
     -misc-const-correctness,
-    -misc-include-cleaner, # useful but far too many occurrences
+    -misc-include-cleaner,
     -misc-no-recursion,
     -misc-non-private-member-variables-in-classes,
-    -misc-confusable-identifiers, # useful but slooow
+    -misc-confusable-identifiers,
     -misc-use-anonymous-namespace,
 
     -modernize-avoid-c-arrays,
@@ -113,7 +113,7 @@ Checks: '*,
     -readability-function-cognitive-complexity,
     -readability-function-size,
     -readability-identifier-length,
-    -readability-identifier-naming, # useful but too slow
+    -readability-identifier-naming,
     -readability-implicit-bool-conversion,
     -readability-isolate-declaration,
     -readability-magic-numbers,
@@ -135,7 +135,7 @@ ExtraArgs:
 # This is technically a compiler error, not a clang-tidy error. We could litter the code base with more pragmas that suppress
 # this error but it is better to pass the following flag to the compiler:
 - '-Wno-unknown-pragmas'
-- '-Wno-unused-command-line-argument' # similar issue
+- '-Wno-unused-command-line-argument'
 
 CheckOptions:
   readability-identifier-naming.ClassCase: CamelCase
