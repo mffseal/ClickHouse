@@ -149,6 +149,7 @@ private:
     }
 
     String getConfigPrefix() const;
+    /// deal with stream data from kafka consumer.
     void threadFunc(size_t idx);
 
     size_t getPollMaxBatchSize() const;

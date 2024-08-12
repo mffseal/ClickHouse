@@ -138,6 +138,7 @@ Chunk KafkaSource::generateImpl()
         }
     };
 
+    /// json -> obj
     StreamingFormatExecutor executor(non_virtual_header, input_format, std::move(on_error));
 
     while (true)

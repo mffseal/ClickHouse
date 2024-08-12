@@ -52,10 +52,14 @@ FilterStep::FilterStep(
 {
 }
 
+/// 过滤算子对应的逻辑结点到物理结点的构建过程.
+/// 创建相应的IProcessor实例对象，并添加到Pipeline中的默认分组中.
 void FilterStep::transformPipeline(QueryPipelineBuilder & pipeline, const BuildQueryPipelineSettings & settings)
 {
     auto expression = std::make_shared<ExpressionActions>(actions_dag, settings.getActionsSettings());
 
+    /// 向输入的Pipeline对象中，添加一个过滤算子。
+    /// 也就是将FilterTransform对象实例化并添加到pipeline。
     pipeline.addSimpleTransform([&](const Block & header, QueryPipelineBuilder::StreamType stream_type)
     {
         bool on_totals = stream_type == QueryPipelineBuilder::StreamType::Totals;

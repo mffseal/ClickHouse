@@ -65,6 +65,7 @@ public:
 using DataStreams = std::vector<DataStream>;
 
 /// Single step of query plan.
+/// 构成 QueryPlan 树的节点。每个节点是一个Step。
 class IQueryPlanStep
 {
 public:
@@ -144,6 +145,7 @@ protected:
 
     /// This field is used to store added processors from this step.
     /// It is used only for introspection (EXPLAIN PIPELINE).
+    /// 一个Step是一系列Processor的组合.
     Processors processors;
 
     static void describePipeline(const Processors & processors, FormatSettings & settings);

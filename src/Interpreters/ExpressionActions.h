@@ -32,6 +32,8 @@ using ExpressionActionsPtr = std::shared_ptr<ExpressionActions>;
 /// Is used to calculate expressions.
 ///
 /// Takes ActionsDAG and orders actions using top-sort.
+/// 代表一组在同一个block的运算序列，通常用于处理单个查询步骤中的表达式计算，比如WHERE子句中的条件表达式。
+/// actions序列是action的 顶排序，代表执行顺序。、
 class ExpressionActions
 {
 public:
@@ -70,8 +72,8 @@ public:
     using NameToInputMap = std::unordered_map<std::string_view, std::list<size_t>>;
 
 private:
-    ActionsDAGPtr actions_dag;
-    Actions actions;
+    ActionsDAGPtr actions_dag;   /// 描述运算之前的依赖关系
+    Actions actions;  /// 每个action代表ActionDAG中的一个节点，不过是按照线性排序存储。
     size_t num_columns = 0;
 
     NamesAndTypesList required_columns;
@@ -138,6 +140,8 @@ private:
   *     2) calculate the expression in the SELECT section,
   * and between the two steps do the filtering by value in the WHERE clause.
   */
+/// 表示一系列ExpressionActions步骤Step的序列，例如表示先执行WHERE...再执行SELECT...
+/// 负责管理整个查询步骤的执行流程，包括步骤之间的数据传递和最终结果的生成。
 struct ExpressionActionsChain : WithContext
 {
     explicit ExpressionActionsChain(ContextPtr context_) : WithContext(context_) {}
@@ -177,7 +181,7 @@ struct ExpressionActionsChain : WithContext
 
     struct ExpressionActionsStep : public Step
     {
-        ActionsDAGPtr actions_dag;
+        ActionsDAGPtr actions_dag;   /// 用于处理一般的运算表达式
 
         explicit ExpressionActionsStep(ActionsDAGPtr actions_dag_, Names required_output_ = Names())
             : Step(std::move(required_output_))
@@ -214,7 +218,7 @@ struct ExpressionActionsChain : WithContext
 
     struct ArrayJoinStep : public Step
     {
-        ArrayJoinActionPtr array_join;
+        ArrayJoinActionPtr array_join;   /// 用于处理数组连接特殊操作
         NamesAndTypesList required_columns;
         ColumnsWithTypeAndName result_columns;
 

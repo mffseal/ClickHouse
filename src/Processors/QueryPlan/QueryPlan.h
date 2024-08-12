@@ -102,6 +102,7 @@ public:
     bool getConcurrencyControl() const { return concurrency_control; }
 
     /// Tree node. Step and it's children.
+    /// QueryPlan树的节点，实际上是对QueryPlanStepPtr的封装。
     struct Node
     {
         QueryPlanStepPtr step;

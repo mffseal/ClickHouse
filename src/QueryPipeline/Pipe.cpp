@@ -612,6 +612,9 @@ void Pipe::addSimpleTransform(const ProcessorGetterWithStreamKind & getter)
 
     Block new_header;
 
+    /// 和example_pipeline类似，主要差别：
+    /// 这里用Pipe类内部的processors保存连接进来的processor
+    /// 并且提供了自动生成新header，支持多输出端口等。
     auto add_transform = [&](OutputPort *& port, StreamType stream_type)
     {
         if (!port)

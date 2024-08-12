@@ -1384,6 +1384,7 @@ void Planner::buildPlanForQueryNode()
 
     PlannerQueryProcessingInfo query_processing_info(from_stage, select_query_options.to_stage);
     QueryAnalysisResult query_analysis_result(query_tree, query_processing_info, planner_context);
+    /// ActionDAG 对象在 expression_analysis_result 里
     auto expression_analysis_result = buildExpressionAnalysisResult(query_tree,
         query_plan.getCurrentDataStream().header.getColumnsWithTypeAndName(),
         planner_context,
